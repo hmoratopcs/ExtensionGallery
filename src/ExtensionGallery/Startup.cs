@@ -1,26 +1,30 @@
 ﻿using System;
-using Microsoft.AspNet.Http;
 using System.Linq;
-using Microsoft.AspNet.Builder;
-using Microsoft.AspNet.Diagnostics;
-using Microsoft.AspNet.Hosting;
-using Microsoft.AspNet.Routing;
-using Microsoft.AspNet.StaticFiles;
-using Microsoft.Framework.Configuration;
-using Microsoft.Framework.DependencyInjection;
-using Microsoft.Framework.Logging;
-using Microsoft.Framework.Runtime;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.PlatformAbstractions;
+using Newtonsoft.Json.Serialization;
 
 namespace ExtensionGallery
 {
 	public class Startup
 	{
-		public Startup(IHostingEnvironment env, IApplicationEnvironment appEnv)
+		public Startup(IHostingEnvironment env)
 		{
             // Setup configuration sources.
-            Configuration = new ConfigurationBuilder(appEnv.ApplicationBasePath)
-				.AddJsonFile("config.json")
-				.AddEnvironmentVariables().Build();
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(env.ContentRootPath)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
+                .AddEnvironmentVariables();
+            Configuration = builder.Build();
 		}
 
 		public IConfiguration Configuration { get; set; }
@@ -28,82 +32,32 @@ namespace ExtensionGallery
 		// This method gets called by the runtime.
 		public void ConfigureServices(IServiceCollection services)
 		{
-			// Add EF services to the services container.
-			//services.AddEntityFramework(Configuration)
-			//    .AddSqlServer()
-			//    .AddDbContext<ApplicationDbContext>();
-
-			//// Add Identity services to the services container.
-			//services.AddDefaultIdentity<ApplicationDbContext, ApplicationUser, IdentityRole>(Configuration);
-
 			// Add MVC services to the services container.
-			services.AddMvc();
+			services.AddMvc()
+                .AddJsonOptions(options => options.SerializerSettings.ContractResolver = new DefaultContractResolver());
 
-			// Uncomment the following line to add Web API servcies which makes it easier to port Web API 2 controllers.
-			// You need to add Microsoft.AspNet.Mvc.WebApiCompatShim package to project.json
-			// services.AddWebApiConventions();
-
-		}
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        }
 
 		// Configure is called after ConfigureServices is called.
-		public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerfactory)
+		public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
 		{
-			// Configure the HTTP request pipeline.
-			// Add the console logger.
-			//loggerfactory.AddConsole();
+            // loggerFactory.AddConsole(Configuration.GetSection("Logging"));
+            // loggerFactory.AddDebug();
+			loggerFactory.AddConsole().AddDebug();
 
-			// Add the following to the request pipeline only in development environment.
-			if (string.Equals(env.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase))
-			{
-				//app.UseBrowserLink();
-				app.UseErrorPage(ErrorPageOptions.ShowAll);
-				//app.UseDatabaseErrorPage(DatabaseErrorPageOptions.ShowAll);
-			}
-			else
-			{
-				// Add Error handling middleware which catches all application specific errors and
-				// send the request to the following path or controller action.
-				//app.UseErrorHandler("/Home/Error");
-			}
-
-			// app.UseErrorPage(ErrorPageOptions.ShowAll);
-
-			// Add static files to the request pipeline.
-			//var options = new StaticFileOptions();
-			//options.ContentTypeProvider = new CustomContentTypeProvider();
-			//options.ServeUnknownFileTypes = true;
-			//options.OnPrepareResponse = _ =>
-			//{
-			//	string[] valid = new[] { ".js", ".css", ".ico", ".png", ".gif", ".jpg", ".svg", ".woff", ".woff2", ".ttf", ".eot", ".vsix", ".map" };
-			//	string ext = System.IO.Path.GetExtension(_.File.Name).ToLowerInvariant();
-			//	if (valid.Contains(ext))
-			//	{
-			//		_.Context.Response.Headers["cache-control"] = "public, max-age=31536000";
-			//	}
-			//};
-			//app.UseStaticFiles(options);
-
-			// Add cookie-based authentication to the request pipeline.
-			//app.UseIdentity();
+            if (env.IsDevelopment())
+            {
+                //app.UseDeveloperExceptionPage();
+                app.UseBrowserLink();
+            }
+			
+			app.UseDefaultFiles();
+			app.UseStaticFiles();
 
 			// Add MVC to the request pipeline.
 			app.UseMvc(routes =>
 			{
-				//routes.MapRoute(
-				//	name: "extension",
-				//	template: "extension/{id}",
-				//	defaults: new { controller = "Api", action = "Html" });
-
-				//routes.MapRoute(
-				//	name: "author",
-				//	template: "author/{name}",
-				//	defaults: new { controller = "Api", action = "Html" });
-
-				//routes.MapRoute(
-				//	name: "upload",
-				//	template: "upload",
-				//	defaults: new { controller = "Api", action = "Html" });
-
 				routes.MapRoute(
 					name: "default",
 					template: "{controller}/{action}/{id?}",

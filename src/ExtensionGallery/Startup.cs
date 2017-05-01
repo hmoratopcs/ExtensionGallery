@@ -42,13 +42,12 @@ namespace ExtensionGallery
 		// Configure is called after ConfigureServices is called.
 		public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
 		{
-            // loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            // loggerFactory.AddDebug();
-			loggerFactory.AddConsole().AddDebug();
+			loggerFactory.AddConsole(Configuration.GetSection("Logging"));
 
             if (env.IsDevelopment())
             {
-                //app.UseDeveloperExceptionPage();
+				loggerFactory.AddDebug();
+                app.UseDeveloperExceptionPage();
                 app.UseBrowserLink();
             }
 			

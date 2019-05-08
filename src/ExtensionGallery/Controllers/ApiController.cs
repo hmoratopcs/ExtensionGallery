@@ -3,19 +3,22 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ExtensionGallery.Code;
-using Microsoft.AspNet.Hosting;
-using Microsoft.AspNet.Mvc;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ExtensionGallery.Controllers
 {
 	public class ApiController : Controller
 	{
 		IHostingEnvironment _env;
+		IHttpContextAccessor _httpContextAccessor;
 		PackageHelper _helper;
 
-		public ApiController(IHostingEnvironment env)
+		public ApiController(IHostingEnvironment env, IHttpContextAccessor httpContextAccessor)
 		{
 			_env = env;
+			_httpContextAccessor = httpContextAccessor;
 			_helper = new PackageHelper(env.WebRootPath);
 		}
 
@@ -46,12 +49,17 @@ namespace ExtensionGallery.Controllers
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> Upload([FromQuery]string repo, string issuetracker)
+		public async Task<IActionResult> Upload()
 		{
+			var context = _httpContextAccessor.HttpContext;
+
+			Stream bodyStream = context.Request.Body;
+			string repo = context.Request.Query["repo"];
+			string issueTracker = context.Request.Query["issuetracker"];
+
 			try
 			{
-				Stream bodyStream = Context.Request.Body;
-				Package package = await _helper.ProcessVsix(bodyStream, repo, issuetracker);
+				Package package = await _helper.ProcessVsix(bodyStream, repo, issueTracker);
 
 				return Json(package);
 			}

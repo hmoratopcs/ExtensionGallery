@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using ExtensionGallery.Code;
-using Microsoft.AspNet.Hosting;
-using Microsoft.AspNet.Mvc;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ExtensionGallery.Controllers
 {
